@@ -17,6 +17,7 @@
   "dependencies": {
     "jssha": "~1.5.0",
     "mocha": "~2.0.1",
-    "chai": "~1.10.0"
+    "chai": "~1.10.0",
+    "secure-random": "~1.1.1"
   }
 }
