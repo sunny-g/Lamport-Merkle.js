@@ -1,0 +1,21 @@
+{
+  "name": "lamport",
+  "main": "index.js",
+  "version": "0.0.1",
+  "authors": [
+    "sunny-g <sunny.gonna@gmail.com>"
+  ],
+  "description": "utility for generating and signing/verifying messages with lamport keypairs in the browser",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jssha": "~1.5.0",
+    "mocha": "~2.0.1"
+  }
+}
