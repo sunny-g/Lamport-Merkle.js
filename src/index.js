@@ -12,7 +12,18 @@ if (lamport.verify(keys.public, 'MESSAGE TO SIGN', signature)) {
 }
  */
 
-lamport = {
+var HASH_FUNC = 'SHA-256';
+var MSG_TYPE = 'TEXT';
+var HASH_OUTPUT = 'HEX';
+
+var hash = function(msg) {
+  MSG_TYPE = MSG_TYPE || 'TEXT';
+  HASH_OUTPUT = HASH_OUTPUT || 'HEX';
+  var hashObj = new jsSHA(msg, 'TEXT');
+  return hashObj.getHash(HASH_FUNC, HASH_OUTPUT);
+};
+
+var lamport = {
 
   generate: function() {
 
@@ -28,6 +39,6 @@ lamport = {
 
 };
 
-merkle = {
+var merkle = {
 
 };
