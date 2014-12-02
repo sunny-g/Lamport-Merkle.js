@@ -104,9 +104,14 @@ var lamport = {
 /*******************************************************************/
 var KEYNUM = 4;
 
+var parentIdx = function(idx) {
+  return Math.ceil((idx + 1)/2) - 1;
+};
+
 var MerkleKeyTree = function(keyNum) {
   this.size = keyNum || KEYNUM;
   this._leaves = [];
+  this.usedKeyCount = 0;
   var firstRow = [];
   for (var leafNum = 0; leafNum < this.size; leafNum++) {
     var keypair = lamport.generate();
@@ -141,14 +146,22 @@ MerkleKeyTree.prototype.sign = function(msg) {
   // might have to return the pubkey as well
   var finalSig = {};
 
-  var randomKeypairIndex = Math.floor(Math.random() * this.size);
-  var randomKeypair = this._leaves[randomKeypairIndex];
-  while (randomKeypair.used) {
-    randomKeypairIndex = Math.floor(Math.random() * this.size);
-    randomKeypair = this._leaves[randomKeypairIndex];
+  if (this.usedKeyCount === this.size - 1) {
+    // TODO: GIVE USER WARNING INSTEAD OF THROWING AN ERROR
+    throw new Error('This is your last keypair on this tree, USE IT WISELY');
   }
+
+  for (var i = 0; i < this._leaves.length; i++) {
+    if (!this._leaves[i].used) {
+      var randomKeypair = this._leaves[i];
+      var randomKeypairIndex = i;
+      break;
+    }
+  }
+
   var privKey = randomKeypair.privKey;
 
+  finalSig.keyPairId = randomKeypairIndex;
   finalSig.pubKey = randomKeypair.pubKey;
   finalSig.message = msg;
   finalSig.signature = lamport.sign(privKey, msg);
@@ -163,14 +176,32 @@ MerkleKeyTree.prototype.sign = function(msg) {
       finalSig.path.push(this.rows[curRow][idx + 1])
     }
     curRow++;
-    idx = Math.ceil((idx + 1)/2) - 1;
+    idx = parentIdx(idx);
   }
 
   finalSig.path[finalSig.path.length - 1] = this.rootHash;
   randomKeypair.used = true;
+  this.usedKeyCount++;
   return finalSig;
 };
 
 MerkleKeyTree.prototype.verify = function(sigObj) {
+  if (lamport.verify(sigObj.pubKey, sigObj.message, sigObj.signature)) {
+    var idx = sigObj.keyPairId;
+    var h = hash(sigObj.pubKey);
+    for (var i = 0; i < sigObj.path.length - 1; i++) {
+      var auth = sigObj.path[i];
+      if (idx % 2) {
+        h = hash(auth + h);
+      } else {
+        h = hash(h + auth);
+      }
+      idx = parentIdx(idx);
+    }
 
+    if (h === sigObj.path[sigObj.path.length - 1]) {
+      return true;
+    }
+  }
+  return false;
 };
