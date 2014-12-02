@@ -68,7 +68,8 @@ var lamport = {
 
     return {
       privKey: priv,
-      pubKey: pub
+      pubKey: pub,
+      used: false     // used by merkle sigs
     }
   },
 
@@ -97,6 +98,48 @@ var lamport = {
 
 };
 
-var merkle = {
+/*******************************************************************/
+// MERKLE SIGNATURE IMPLEMENTATION
+/*******************************************************************/
+var KEYNUM = 4;
 
+var MerkleKeyTree = function() {
+  this._leaves = [];
+  var firstRow = [];
+  for (var leafNum = 0; leafNum < KEYNUM; leafNum++) {
+    var keypair = lamport.generate();
+    this._leaves.push(keypair);
+    firstRow.push( hash(keypair.pubKey) );
+    // firstRow.push( i );
+  }
+
+  this.rows = {
+    0: firstRow
+  };
+
+  var levels = Math.sqrt(KEYNUM);
+  for (var i = 1; i <= levels; i++) {
+    // for each level in the tree
+    var curRow = [];
+    var prevRow = this.rows[i-1];
+    for (var k = 0; k < prevRow.length; k += 2) {
+      // for each hash in the previous row
+      // hash(its and next hash's values)
+      var h = hash(prevRow[k] + prevRow[k+1]);
+      curRow.push(h);
+    }
+
+    this.rows[i] = curRow;
+  }
 };
+
+// MerkleKeyTree.prototype
+
+// TODO: figure out this stuff
+/*
+* what do we publish when we sign a message?
+*
+ */
+
+
+
