@@ -122,7 +122,7 @@ var MerkleKeyTree = function(keyNum) {
 
   this.rows = [firstRow];
 
-  var levels = Math.sqrt(this.size);
+  var levels = Math.ceil(Math.log2(this.size));
   for (var i = 1; i <= levels; i++) {
     // for each level in the tree
     var curRow = [];
