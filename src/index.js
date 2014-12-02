@@ -19,6 +19,10 @@ var HASH_OUTPUT = 'HEX';
 var hash = function(msg, msg_type, output_type) {
   msg_type = msg_type || MSG_TYPE;
   output_type = output_type || HASH_OUTPUT;
+
+  if (typeof msg !== 'string') {
+    msg = JSON.stringify(msg);
+  }
   var hashObj = new jsSHA(msg, msg_type);
   return hashObj.getHash(HASH_FUNC, output_type).slice(0, 32);
 };
@@ -35,6 +39,17 @@ var char2Binary = function(char) {
   return binary;
 };
 
+var eachBit = function(msg, callback) {
+  var msgArr = msg.split('');
+  msgArr.forEach(function(char, charIdx) {
+    var bits = char2Binary(char).split('');
+    bits.forEach(function(bit, bitI) {
+      bitIdx = (charIdx * 8) + bitI;
+      callback (bit, bitIdx);
+    });
+  });
+};
+
 var lamport = {
 
   generate: function() {
@@ -44,10 +59,8 @@ var lamport = {
     for (var i = 0; i < 256; i++) {
       var num1 = random32Bytes();
       var num2 = random32Bytes();
-      var hash1 = hash(JSON.stringify(num1));
-      var hash2 = hash(JSON.stringify(num2));
-      // var hash1 = hash(num1.toString());
-      // var hash2 = hash(num2.toString());
+      var hash1 = hash(num1);
+      var hash2 = hash(num2);
 
       priv.push([num1, num2]);
       pub.push([hash1, hash2]);
@@ -60,28 +73,26 @@ var lamport = {
   },
 
   sign: function(privKey, msg) {
-    /*
-    for each bit in the msgHash,
-      push to signature either the 0th or 1st hash in each pair of the pubkey
-
-     */
     var msgHash = hash(msg);
-    var hashArray = msgHash.split('');
     var signature = [];
 
-    hashArray.forEach(function(letter, index) {
-      var binary = char2Binary(letter).split('');
-      binary.forEach(function(bit, bitIdx) {
-        // signature.push( pubKey[index + bitIdx][bit] );
-        signature.push(privKey[index + bitIdx][bit]);
-      })
+    eachBit(msgHash, function(bit, bitIdx) {
+      signature.push( privKey[bitIdx][bit] );
     });
 
     return signature;
   },
 
-  verify: function(pubKey, msg) {
+  verify: function(pubKey, msg, signature) {
+    var msgHash = hash(msg);
+    var authentic = true;
 
+    eachBit(msgHash, function(bit, bitIdx) {
+      if (hash(signature[bitIdx]) !== pubKey[bitIdx][bit]) {
+        authentic = false;
+      }
+    });
+    return authentic;
   }
 
 };

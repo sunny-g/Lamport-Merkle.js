@@ -18,7 +18,7 @@ describe('lamport signatures', function() {
       expect(keypair.pubKey[0]).to.be.an('array');
 
       var i = Math.floor(Math.random() * 256);
-      expect(hash(JSON.stringify(keypair.privKey[i][1]))).to.equal(keypair.pubKey[i][1]);
+      expect(hash(keypair.privKey[i][1])).to.equal(keypair.pubKey[i][1]);
       // expect(hash( keypair.privKey[i][1].toString() )).to.equal(keypair.pubKey[i][1]);
     });
 
@@ -32,6 +32,14 @@ describe('lamport signatures', function() {
 
       expect(signature.length).to.equal(256);
       expect(keypair.privKey[1]).to.contain(signature[1]);
+    });
+
+    it('should guarantee that the signature is authentic', function() {
+      var keypair = lamport.generate();
+      var msg = 'this is another sample message';
+      var signature = lamport.sign(keypair.privKey, msg);
+
+      expect(lamport.verify(keypair.pubKey, msg, signature)).to.be.ok();
     })
   });
 
