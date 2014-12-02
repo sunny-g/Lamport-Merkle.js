@@ -50,6 +50,7 @@ var eachBit = function(msg, callback) {
   });
 };
 
+// TODO: REFACTOR INTO PSEUDOCLASSICAL MODEL
 var lamport = {
 
   generate: function() {
@@ -103,10 +104,11 @@ var lamport = {
 /*******************************************************************/
 var KEYNUM = 4;
 
-var MerkleKeyTree = function() {
+var MerkleKeyTree = function(keyNum) {
+  this.size = keyNum || KEYNUM;
   this._leaves = [];
   var firstRow = [];
-  for (var leafNum = 0; leafNum < KEYNUM; leafNum++) {
+  for (var leafNum = 0; leafNum < this.size; leafNum++) {
     var keypair = lamport.generate();
     this._leaves.push(keypair);
     firstRow.push( hash(keypair.pubKey) );
@@ -115,7 +117,7 @@ var MerkleKeyTree = function() {
 
   this.rows = [firstRow];
 
-  var levels = Math.sqrt(KEYNUM);
+  var levels = Math.sqrt(this.size);
   for (var i = 1; i <= levels; i++) {
     // for each level in the tree
     var curRow = [];
@@ -129,31 +131,44 @@ var MerkleKeyTree = function() {
 
     this.rows[i] = curRow;
   }
+
+  this.rowNum = this.rows.length;
+  this.rootHash = this.rows[this.rows.length - 1][0];
 };
 
 MerkleKeyTree.prototype.sign = function(msg) {
   // returns the original sig plus a list of nodes
   // might have to return the pubkey as well
-  var finalSignature = {};
+  var finalSig = {};
 
-  var randomKeypairIndex = Math.floor(Math.random() * KEYNUM);
+  var randomKeypairIndex = Math.floor(Math.random() * this.size);
   var randomKeypair = this._leaves[randomKeypairIndex];
+  while (randomKeypair.used) {
+    randomKeypairIndex = Math.floor(Math.random() * this.size);
+    randomKeypair = this._leaves[randomKeypairIndex];
+  }
   var privKey = randomKeypair.privKey;
 
-  finalSignature.pubKey = randomKeypair.pubKey;
-  finalSignature.signature = lamport.sign(privKey, msg);
-  finalSignature.path = [];
+  finalSig.pubKey = randomKeypair.pubKey;
+  finalSig.message = msg;
+  finalSig.signature = lamport.sign(privKey, msg);
+  finalSig.path = [];
 
-  /*
-  BEFORE THIS: how do we get the idx for the next level?
-  if idx is even
-    path.push(this.rows[i][idx + 1])
-  if idx is odd
-    path.push(this.rows[i][idx + 1])
+  var curRow = 0;
+  var idx = randomKeypairIndex;
+  while (curRow < this.rowNum) {
+    if (idx % 2) {
+      finalSig.path.push(this.rows[curRow][idx - 1])
+    } else {
+      finalSig.path.push(this.rows[curRow][idx + 1])
+    }
+    curRow++;
+    idx = Math.ceil((idx + 1)/2) - 1;
+  }
 
-   */
-
-  return finalSignature;
+  finalSig.path[finalSig.path.length - 1] = this.rootHash;
+  randomKeypair.used = true;
+  return finalSig;
 };
 
 MerkleKeyTree.prototype.verify = function(sigObj) {
