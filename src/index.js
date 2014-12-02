@@ -113,9 +113,7 @@ var MerkleKeyTree = function() {
     // firstRow.push( i );
   }
 
-  this.rows = {
-    0: firstRow
-  };
+  this.rows = [firstRow];
 
   var levels = Math.sqrt(KEYNUM);
   for (var i = 1; i <= levels; i++) {
@@ -133,13 +131,31 @@ var MerkleKeyTree = function() {
   }
 };
 
-// MerkleKeyTree.prototype
+MerkleKeyTree.prototype.sign = function(msg) {
+  // returns the original sig plus a list of nodes
+  // might have to return the pubkey as well
+  var finalSignature = {};
 
-// TODO: figure out this stuff
-/*
-* what do we publish when we sign a message?
-*
- */
+  var randomKeypairIndex = Math.floor(Math.random() * KEYNUM);
+  var randomKeypair = this._leaves[randomKeypairIndex];
+  var privKey = randomKeypair.privKey;
 
+  finalSignature.pubKey = randomKeypair.pubKey;
+  finalSignature.signature = lamport.sign(privKey, msg);
+  finalSignature.path = [];
 
+  /*
+  BEFORE THIS: how do we get the idx for the next level?
+  if idx is even
+    path.push(this.rows[i][idx + 1])
+  if idx is odd
+    path.push(this.rows[i][idx + 1])
 
+   */
+
+  return finalSignature;
+};
+
+MerkleKeyTree.prototype.verify = function(sigObj) {
+
+};
