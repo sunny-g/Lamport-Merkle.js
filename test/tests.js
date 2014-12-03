@@ -47,10 +47,17 @@ describe('merkle signatures', function() {
 
 
   describe('merkle tree generation', function() {
-    it('should generate merkle trees with sqrt(n) + 1 levels', function() {
+    it('should generate merkle trees with log2(n) + 1 levels', function() {
 
       expect(mTree.rowNum).to.equal(3);
     });
+
+    xit('should generate merkle trees of varying size', function() {
+      var size = 8;
+      var mTree = new MerkleKeyTree(size);
+
+      expect(mTree._leaves.length).to.equal(size);
+    })
   });
 
   describe('message signing and verification', function() {
@@ -78,7 +85,6 @@ describe('merkle signatures', function() {
       var msg = 'this is the last message to be signed with this keytree';
       var sig = mTree.sign(msg);
 
-      // expect(mTree.sign(msg)).to.throw('This is your last keypair, use it to sign your next key tree');
       expect(mTree.sign).to.throw(Error);
     })
 
