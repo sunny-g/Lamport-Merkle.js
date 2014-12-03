@@ -1,7 +1,6 @@
 var expect = chai.expect;
 
 describe('lamport signatures', function() {
-  // var keypair = lamport.generate();
   var keypair = new LamportKeypair();
 
   describe('keypair creation', function () {
@@ -27,7 +26,6 @@ describe('lamport signatures', function() {
   describe('message signing and verification', function () {
     it('should return an Array[256] with each elem in privKey', function () {
       var msg = 'this is my sample message';
-      // var signature = lamport.sign(keypair.privKey, msg);
       var signature = keypair.sign(msg);
 
       expect(signature.length).to.equal(256);
@@ -52,7 +50,7 @@ describe('merkle signatures', function() {
   describe('merkle tree generation', function() {
     it('should generate merkle trees with log2(n) + 1 levels', function() {
 
-      expect(mTree.rowNum).to.equal(3);
+      expect(mTree.numOfLevels).to.equal(3);
     });
 
     it('should generate merkle trees of varying size', function() {

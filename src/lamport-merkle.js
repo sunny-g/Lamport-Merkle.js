@@ -117,13 +117,13 @@ var MerkleKeyTree = function(keyNum) {
     // firstRow.push( i );
   }
 
-  this.rows = [firstRow];
+  this.levels = [firstRow];
 
   var levels = Math.ceil(Math.log2(this.size));
   for (var i = 1; i <= levels; i++) {
     // for each level in the tree
     var curRow = [];
-    var prevRow = this.rows[i-1];
+    var prevRow = this.levels[i-1];
     for (var k = 0; k < prevRow.length; k += 2) {
       // for each hash in the previous row
       // hash(its and next hash's values)
@@ -131,11 +131,12 @@ var MerkleKeyTree = function(keyNum) {
       curRow.push(h);
     }
 
-    this.rows[i] = curRow;
+    this.levels[i] = curRow;
   }
 
-  this.rowNum = this.rows.length;
-  this.rootHash = this.rows[this.rows.length - 1][0];
+  this.numOfLevels = this.levels.length;
+  this.numOfKeys = this._leaves.length;
+  this.topHash = this.levels[this.levels.length - 1][0];
 };
 
 MerkleKeyTree.prototype.sign = function(msg) {
@@ -148,7 +149,7 @@ MerkleKeyTree.prototype.sign = function(msg) {
     throw new Error('This is your last keypair on this tree, USE IT WISELY');
   }
 
-  for (var i = 0; i < this._leaves.length; i++) {
+  for (var i = 0; i < this.numOfKeys; i++) {
     if (!this._leaves[i].used) {
       var randomKeypair = this._leaves[i];
       var randomKeypairIndex = i;
@@ -162,19 +163,19 @@ MerkleKeyTree.prototype.sign = function(msg) {
   finalSig.signature = randomKeypair.sign(msg);
   finalSig.path = [];
 
-  var curRow = 0;
+  var curLevel = 0;
   var idx = randomKeypairIndex;
-  while (curRow < this.rowNum) {
+  while (curLevel < this.numOfLevels) {
     if (idx % 2) {
-      finalSig.path.push(this.rows[curRow][idx - 1])
+      finalSig.path.push(this.levels[curLevel][idx - 1])
     } else {
-      finalSig.path.push(this.rows[curRow][idx + 1])
+      finalSig.path.push(this.levels[curLevel][idx + 1])
     }
-    curRow++;
+    curLevel++;
     idx = parentIdx(idx);
   }
 
-  finalSig.path[finalSig.path.length - 1] = this.rootHash;
+  finalSig.path[finalSig.path.length - 1] = this.topHash;
   randomKeypair.used = true;
   this.usedKeyCount++;
   return finalSig;
