@@ -81,7 +81,6 @@ describe('merkle signatures', function() {
       var msg = 'this is yet another semi-unique message to be signed';
       var sig = mTree.sign(msg);
 
-      var keyPair = mTree._leaves[sig.keyPairId];
       expect(mTree.verify(sig)).to.be.true();
     });
 

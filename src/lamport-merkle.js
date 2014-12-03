@@ -18,6 +18,18 @@ var random32Bytes = function() {
   return secureRandom.randomArray(32);
 };
 
+var random32ByteString = function() {
+  return secureRandom.randomArray(32).reduce(function(str, byte) {
+    return (str += String.fromCharCode(byte));
+  }, '')
+};
+
+var randomString2Bytes = function(str) {
+  return str.split('').reduce(function(arr, char) {
+    return arr.push(char.charCodeAt(0))
+  }, [])
+};
+
 var char2Byte = function(char) {
   var binary = char.charCodeAt(0).toString(2);
   while (binary.length < 8) {
@@ -47,8 +59,8 @@ var LamportKeypair = function() {
   this.used = false;
 
   for (var i = 0; i < 256; i++) {
-    var num1 = random32Bytes();
-    var num2 = random32Bytes();
+    var num1 = random32ByteString();
+    var num2 = random32ByteString();
     var hash1 = hash(num1);
     var hash2 = hash(num2);
 
@@ -73,6 +85,7 @@ LamportKeypair.prototype.verify = function(msg, signature) {
   var msgHash = hash(msg);
   var authentic = true;
 
+  // TODO: BREAK OUT THE MINUTE THE SIGNATURE HASH DONT MATCH THE PUBKEY
   var that = this;
   eachBit(msgHash, function(bit, bitIdx) {
     if (hash(signature[bitIdx]) !== that.pubKey[bitIdx][bit]) {
