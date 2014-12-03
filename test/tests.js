@@ -1,7 +1,8 @@
 var expect = chai.expect;
 
 describe('lamport signatures', function() {
-  var keypair = lamport.generate();
+  // var keypair = lamport.generate();
+  var keypair = new LamportKeypair();
 
   describe('keypair creation', function () {
     it('should return the same hash for a given message', function () {
@@ -12,13 +13,13 @@ describe('lamport signatures', function() {
     });
 
     it('should return a correct keypair, each an array of 256 tuples', function() {
-      expect(keypair.privKey.length).to.equal(256);
+      expect(keypair._privKey.length).to.equal(256);
       expect(keypair.pubKey.length).to.equal(256);
-      expect(keypair.privKey[0]).to.be.an('array');
+      expect(keypair._privKey[0]).to.be.an('array');
       expect(keypair.pubKey[0]).to.be.an('array');
 
       var i = Math.floor(Math.random() * 256);
-      expect(hash(keypair.privKey[i][1])).to.equal(keypair.pubKey[i][1]);
+      expect(hash(keypair._privKey[i][1])).to.equal(keypair.pubKey[i][1]);
     });
 
   });
@@ -26,17 +27,19 @@ describe('lamport signatures', function() {
   describe('message signing and verification', function () {
     it('should return an Array[256] with each elem in privKey', function () {
       var msg = 'this is my sample message';
-      var signature = lamport.sign(keypair.privKey, msg);
+      // var signature = lamport.sign(keypair.privKey, msg);
+      var signature = keypair.sign(msg);
 
       expect(signature.length).to.equal(256);
-      expect(keypair.privKey[1]).to.contain(signature[1]);
+      expect(keypair._privKey[1]).to.contain(signature[1]);
     });
 
     it('should guarantee that the signature is authentic', function() {
       var msg = 'this is another sample message';
-      var signature = lamport.sign(keypair.privKey, msg);
+      // var signature = lamport.sign(keypair.privKey, msg);
+      var signature = keypair.sign(msg);
 
-      expect(lamport.verify(keypair.pubKey, msg, signature)).to.be.true();
+      expect(keypair.verify(msg, signature)).to.be.true();
     });
   });
 
@@ -52,8 +55,10 @@ describe('merkle signatures', function() {
       expect(mTree.rowNum).to.equal(3);
     });
 
-    xit('should generate merkle trees of varying size', function() {
-      var size = 8;
+    it('should generate merkle trees of varying size', function() {
+      this.timeout(3600000);
+      // var size = 64;
+      var size = 4;
       var mTree = new MerkleKeyTree(size);
 
       expect(mTree._leaves.length).to.equal(size);
@@ -77,14 +82,15 @@ describe('merkle signatures', function() {
       var sig = mTree.sign(msg);
 
       var keyPair = mTree._leaves[sig.keyPairId];
-      expect(lamport.verify(keyPair.pubKey, msg, sig.signature)).to.be.true();
       expect(mTree.verify(sig)).to.be.true();
     });
 
     it('should not let you sign with your last key', function() {
+      var mTree = new MerkleKeyTree(2);
       var msg = 'this is the last message to be signed with this keytree';
-      var sig = mTree.sign(msg);
+      mTree.sign(msg);
 
+      // TODO: DOESN'T ACTUALLY TEST IF THE CALL THROWS AN ERROR
       expect(mTree.sign).to.throw(Error);
     })
 

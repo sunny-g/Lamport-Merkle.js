@@ -1,16 +1,3 @@
-/*
-EXAMPLE USAGE:
-var keys = lamport.generate();
-
-var signature = lamport.sign(keys.privKey, 'MESSAGE TO SIGN')
-
-if (lamport.verify(keys.pubKey, 'MESSAGE TO SIGN', signature)) {
-  console.log('Authentic.');
-} else {
-  console.log('Not Authentic!');
-}
- */
-
 var HASH_FUNC = 'SHA-256';
 
 var MSG_TYPE = 'TEXT';
@@ -31,7 +18,7 @@ var random32Bytes = function() {
   return secureRandom.randomArray(32);
 };
 
-var char2Binary = function(char) {
+var char2Byte = function(char) {
   var binary = char.charCodeAt(0).toString(2);
   while (binary.length < 8) {
     binary = '0' + binary;
@@ -42,7 +29,7 @@ var char2Binary = function(char) {
 var eachBit = function(msg, callback) {
   var msgArr = msg.split('');
   msgArr.forEach(function(char, charIdx) {
-    var bits = char2Binary(char).split('');
+    var bits = char2Byte(char).split('');
     bits.forEach(function(bit, bitI) {
       bitIdx = (charIdx * 8) + bitI;
       callback (bit, bitIdx);
@@ -50,53 +37,49 @@ var eachBit = function(msg, callback) {
   });
 };
 
-// TODO: REFACTOR INTO PSEUDOCLASSICAL MODEL
-var lamport = {
+/*******************************************************************/
+// LAMPORT SIGNATURE IMPLEMENTATION
+/*******************************************************************/
 
-  generate: function() {
-    var priv = [];
-    var pub = [];
+var LamportKeypair = function() {
+  this._privKey = [];
+  this.pubKey = [];
+  this.used = false;
 
-    for (var i = 0; i < 256; i++) {
-      var num1 = random32Bytes();
-      var num2 = random32Bytes();
-      var hash1 = hash(num1);
-      var hash2 = hash(num2);
+  for (var i = 0; i < 256; i++) {
+    var num1 = random32Bytes();
+    var num2 = random32Bytes();
+    var hash1 = hash(num1);
+    var hash2 = hash(num2);
 
-      priv.push([num1, num2]);
-      pub.push([hash1, hash2]);
-    }
-
-    return {
-      privKey: priv,
-      pubKey: pub,
-      used: false     // used by merkle sigs
-    }
-  },
-
-  sign: function(privKey, msg) {
-    var msgHash = hash(msg);
-    var signature = [];
-
-    eachBit(msgHash, function(bit, bitIdx) {
-      signature.push( privKey[bitIdx][bit] );
-    });
-
-    return signature;
-  },
-
-  verify: function(pubKey, msg, signature) {
-    var msgHash = hash(msg);
-    var authentic = true;
-
-    eachBit(msgHash, function(bit, bitIdx) {
-      if (hash(signature[bitIdx]) !== pubKey[bitIdx][bit]) {
-        authentic = false;
-      }
-    });
-    return authentic;
+    this._privKey.push([num1, num2]);
+    this.pubKey.push([hash1, hash2]);
   }
+};
 
+LamportKeypair.prototype.sign = function(msg) {
+  var msgHash = hash(msg);
+  var signature = [];
+
+  var that = this;
+  eachBit(msgHash, function(bit, bitIdx) {
+    signature.push( that._privKey[bitIdx][bit] );
+  });
+
+  return signature;
+};
+
+LamportKeypair.prototype.verify = function(msg, signature) {
+  var msgHash = hash(msg);
+  var authentic = true;
+
+  var that = this;
+  eachBit(msgHash, function(bit, bitIdx) {
+    if (hash(signature[bitIdx]) !== that.pubKey[bitIdx][bit]) {
+      authentic = false;
+    }
+  });
+  return authentic;
 };
 
 /*******************************************************************/
@@ -114,7 +97,8 @@ var MerkleKeyTree = function(keyNum) {
   this.usedKeyCount = 0;
   var firstRow = [];
   for (var leafNum = 0; leafNum < this.size; leafNum++) {
-    var keypair = lamport.generate();
+    // var keypair = lamport.generate();
+    var keypair = new LamportKeypair();
     this._leaves.push(keypair);
     firstRow.push( hash(keypair.pubKey) );
     // firstRow.push( i );
@@ -159,12 +143,10 @@ MerkleKeyTree.prototype.sign = function(msg) {
     }
   }
 
-  var privKey = randomKeypair.privKey;
-
   finalSig.keyPairId = randomKeypairIndex;
   finalSig.pubKey = randomKeypair.pubKey;
   finalSig.message = msg;
-  finalSig.signature = lamport.sign(privKey, msg);
+  finalSig.signature = randomKeypair.sign(msg);
   finalSig.path = [];
 
   var curRow = 0;
@@ -186,8 +168,10 @@ MerkleKeyTree.prototype.sign = function(msg) {
 };
 
 MerkleKeyTree.prototype.verify = function(sigObj) {
-  if (lamport.verify(sigObj.pubKey, sigObj.message, sigObj.signature)) {
-    var idx = sigObj.keyPairId;
+  var idx = sigObj.keyPairId;
+  var lamport = this._leaves[idx];
+  if (lamport.verify(sigObj.message, sigObj.signature)) {
+
     var h = hash(sigObj.pubKey);
     for (var i = 0; i < sigObj.path.length - 1; i++) {
       var auth = sigObj.path[i];
