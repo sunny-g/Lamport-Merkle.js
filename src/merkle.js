@@ -84,10 +84,10 @@ class MerkleKeyTree {
     return finalSig;
   }
 
-  verify(sigObj) {
+  verify(msg, sigObj) {
     var idx = sigObj.keyPairId;
     var lamport = this._leaves[idx];
-    if (lamport.verify(sigObj.message, sigObj.signature)) {
+    if (lamport.verify(msg, sigObj.signature)) {
 
       var h = hash(sigObj.pubKey);
       for (var i = 0; i < sigObj.path.length - 1; i++) {
@@ -107,3 +107,5 @@ class MerkleKeyTree {
     return false;
   }
 }
+
+window.MerkleKeyTree = MerkleKeyTree;

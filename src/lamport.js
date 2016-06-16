@@ -43,3 +43,5 @@ class LamportKeypair {
     return authentic;
   }
 }
+
+window.LamportKeypair = LamportKeypair;
