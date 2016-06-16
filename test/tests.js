@@ -6,7 +6,9 @@ describe('lamport signatures', function() {
   describe('keypair creation', function () {
     it('should return the same hash for a given message', function () {
       var msg = 'this is a message';
-      var output_hash = new jsSHA(msg, 'TEXT').getHash('SHA-256', 'HEX').slice(0, 32);
+      var sample_hash = new jsSHA('SHA-256', 'TEXT')
+      sample_hash.update(msg);
+      var output_hash = sample_hash.getHash('HEX').slice(0, 32);
 
       expect(output_hash).to.equal(hash(msg));
     });
@@ -37,7 +39,7 @@ describe('lamport signatures', function() {
       // var signature = lamport.sign(keypair.privKey, msg);
       var signature = keypair.sign(msg);
 
-      expect(keypair.verify(msg, signature)).to.be.true();
+      expect(keypair.verify(msg, signature)).to.be.true;
     });
   });
 
@@ -79,7 +81,7 @@ describe('merkle signatures', function() {
       var msg = 'this is yet another semi-unique message to be signed';
       var sig = mTree.sign(msg);
 
-      expect(mTree.verify(sig)).to.be.true();
+      expect(mTree.verify(sig)).to.be.true;
     });
 
     it('should not let you sign with your last key', function() {

@@ -1,19 +1,16 @@
 'use strict';
 
-var HASH_FUNC = 'SHA-256';
-
-var MSG_TYPE = 'TEXT';
-var HASH_OUTPUT = 'HEX';
-
 var hash = function(msg, msg_type, output_type) {
-  msg_type = msg_type || MSG_TYPE;
-  output_type = output_type || HASH_OUTPUT;
+  let hash_type = 'SHA-256';
+  msg_type = msg_type || 'TEXT';
+  output_type = output_type || 'HEX';
 
   if (typeof msg !== 'string') {
     msg = JSON.stringify(msg);
   }
-  var hashObj = new jsSHA(msg, msg_type);
-  return hashObj.getHash(HASH_FUNC, output_type).slice(0, 32);
+  var hashObj = new jsSHA(hash_type, msg_type);
+  hashObj.update(msg);
+  return hashObj.getHash(output_type).slice(0, 32);
 };
 
 var random32Bytes = function() {
